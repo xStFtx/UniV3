@@ -2,7 +2,8 @@
 Monitoring service for Uniswap V3 pools
 
 Usage: 
-go build 
+go build , 
+
 go run main.go
 
 Packages: 
