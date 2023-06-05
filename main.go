@@ -9,21 +9,29 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func main() {
+	// Prompt user for Infura project ID
+	var infuraProjectID string
+	fmt.Print("Enter your Infura project ID: ")
+	fmt.Scanln(&infuraProjectID)
+
+	// Prompt user for Uniswap V3 pool address
+	var poolAddress string
+	fmt.Print("Enter the Uniswap V3 pool address: ")
+	fmt.Scanln(&poolAddress)
+
 	// Configure Ethereum client
-	ethClient, err := ethclient.Dial("https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID")
+	ethClient, err := ethclient.Dial("https://mainnet.infura.io/v3/" + infuraProjectID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Define the address of the Uniswap V3 pool you want to monitor
-	poolAddress := common.HexToAddress("0xYOUR_POOL_ADDRESS")
-
 	// Create a new instance of the Uniswap V3 pool contract
-	poolContract, err := NewUniswapV3Pool(poolAddress, ethClient)
+	poolContract, err := NewUniswapV3Pool(common.HexToAddress(poolAddress), ethClient)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,7 +50,7 @@ func monitorPool(poolContract *UniswapV3Pool) {
 	filterQuery := ethereum.FilterQuery{
 		Addresses: []common.Address{poolContract.contractAddress},
 	}
-	logs := make(chan go-ethereum.log)
+	logs := make(chan types.Log)
 	sub, err := poolContract.ethClient.SubscribeFilterLogs(ctx, filterQuery, logs)
 	if err != nil {
 		log.Fatal(err)
@@ -60,16 +68,23 @@ func monitorPool(poolContract *UniswapV3Pool) {
 	}
 }
 
-func handleEvent(eventLog ethereum.Log) {
+func handleEvent(eventLog types.Log) {
 	// Parse the event data
-	event := &YourEventStruct{} // Replace with your event struct
-	err := abi.JSON(strings.NewReader(poolABI)).Unpack(&event, "YourEvent", eventLog.Data)
+	event := &SwapEvent{} // Replace with your event struct
+	abiObj, err := abi.JSON(strings.NewReader(poolABI))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = abiObj.Unpack(event, "YourEvent", eventLog.Data)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Process the event data
-	// ...
+	fmt.Println("Received event:")
+	fmt.Printf("FromToken: %s\n", event.FromToken.Hex())
+	fmt.Printf("ToToken: %s\n", event.ToToken.Hex())
 }
 
 // Replace with your actual Uniswap V3 pool contract ABI
@@ -89,4 +104,10 @@ func NewUniswapV3Pool(address common.Address, ethClient *ethclient.Client) (*Uni
 		contractAddress: address,
 		ethClient:       ethClient,
 	}, nil
+}
+
+// Random event/ Add your own custom event
+type SwapEvent struct {
+	FromToken common.Address
+	ToToken   common.Address
 }
